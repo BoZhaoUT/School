@@ -1,0 +1,92 @@
+#!/bin/sh
+
+#echo "<!DOCTPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">"
+#echo "<html>"
+#echo "<head>"
+#echo "<title>Pictures</title>"
+#echo "</head>"
+#echo "<body>"
+#echo "<h1>Pictures</h1>"
+
+# check if there are exactly two arguments
+if [ $# -eq 2 ];
+then
+  # check if the number of column is a positive integer
+  if ! echo $1 | egrep -q '^[1-9][0-9]*$';
+  then
+  	echo "invalid argument for number of columns: It must be a positive integer" >&2
+  # check if the second argument is a directory
+  elif ! [ -d $2 ];
+  then
+    echo "Second argument must be a directory." >&2
+  else
+  	echo "<!DOCTPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">"
+    echo "<html>"
+    echo "<head>"
+    echo "<title>Pictures</title>"
+    echo "</head>"
+    echo "<body>"
+    echo "<h1>Pictures</h1>"
+
+    for next_directory in $2/*
+    do
+      # only visit directories
+      if [ -d $next_directory ];
+      then
+        last_field=`echo $next_directory | rev | cut -d "/" -f 1`
+        year=`echo $last_field | rev`
+        # only check directories with names made up by numbers
+      	if echo $year | egrep -q '^[0-9]*$';
+      	then
+      	  # create second header
+      	  echo -n '<h2>'
+      	  echo -n $year
+      	  echo '</h2>'
+      	  echo '<table>'
+      	  # count total number of pictures in this table and 
+      	  # number of pictures in a row
+      	  num_pic_total=0
+      	  num_pic_row=0
+      	  # loop through each month directory
+      	  for month_directory in $next_directory/*
+      	  do
+      	  	# loop through all files in month directory
+      	  	for pic in $month_directory/*
+      	  	do
+      	  	  # check if this file is a valid JPEG file
+      	  	  if file -b "$pic" | grep -q 'JPEG image data';
+      	  	  then
+      	  		num_pic_total=`expr $num_pic_total + 1`
+      	  		# if this is the first picture in a row
+      	  		if [ $num_pic_row -eq 0 ];
+      	  		then
+      	  		  echo '<tr>'
+      	  		fi
+
+      	  		# insert this picture
+      	  		echo -n '<td><img src="'
+      	  		echo -n "$pic"
+      	  		echo '" height=100></td>'
+      	  		num_pic_row=`expr $num_pic_row + 1`
+
+      	  		# if this is the last picture in a row
+                if [ $num_pic_row -eq $1 ];
+                then
+                  echo "</tr>"
+                  # reset the counter of number of pictures in a row
+                  num_pic_row=0
+                fi
+      	  	  fi
+      	    done
+      	  done
+      	  echo '</table>'
+        fi
+      fi
+    done
+    echo '</body>'
+    echo '</html>'
+  fi
+# too many or too few arguments
+else
+  echo "this script takes exactly two arguments." >&2
+fi

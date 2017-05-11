@@ -1,0 +1,45 @@
+add_group instructors
+add_group friends
+list_groups
+add_user instructors vincent
+add_user instructors kenny
+add_user instructors schroe14
+add_user friends david1
+add_user friends david2
+add_user friends david3
+add_user instructors reid
+list_users instructors
+list_users friends
+add_xct instructors reid 65
+list_users instructors
+add_xct friends david3 15.08
+list_users friends
+add_xct instructors schroe14 110.95
+list_users instructors
+add_xct instructors reid 220.95
+list_users instructors
+add_xct friends david1 16.71
+list_users friends
+add_xct friends david2 16.71
+list_users friends
+add_xct friends david1 200.00
+list_users friends
+user_balance friends david2
+user_balance friends david3
+user_balance instructors reid
+user_balance instructors schroe14
+user_balance instructors kenny
+user_balance instructors vincent
+list_users instructors
+list_users friends
+under_paid instructors
+under_paid friends
+recent_xct friends 5
+remove_user friends david1
+recent_xct friends 5
+remove_user friends david2
+list_users friends
+recent_xct friends 5
+remove_user friends david3
+remove_user friends david3
+recent_xct friends 5

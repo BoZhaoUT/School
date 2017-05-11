@@ -1,0 +1,51 @@
+#!/bin/sh
+
+PATH=$PATH:/courses/webspace/cscb09w16/bin
+
+# check if the argument is a valid directory
+if test -d $1;
+then
+  # loop through files in the given directory
+  for pic in $1/*
+  do
+    # check if pic is a valid JPEG file
+    if file -b "$pic" | grep -q "JPEG image data";
+    then
+      exiftime_result=`exiftime -tg "$pic"`
+      generated_time=`echo $exiftime_result | cut -d " " -f 3`
+      year=`echo $generated_time | cut -d ":" -f 1`
+      month=`echo $generated_time | cut -d ":" -f 2`
+      # check whether $year is occupied by a
+      # non-directory file
+      if [ -e $year ] && ! [ -d $year ];
+      then
+        echo "cannot create $year, because there exists a 
+        non-directory file with the same name." >&2
+      else
+        mkdir -p $year
+        # check whether $year$month is occupied by a
+        # non-directory file
+        if [ -e $year/$month ] && ! [ -d $year/$month ];
+        then
+          echo "cannot create $year/$month, because there
+          exists a non-directory file with the same name." >&2
+        # assume we can create directory $year/$month or it exists
+        # and we can use it
+        else
+          mkdir -p $year/$month
+          # check whther $year$month$pic_name exists and it's a directory
+          last_field=`echo $pic | rev | cut -d "/" -f 1`
+          pic_name=`echo $last_field | rev`
+          if [ -d $year/$month/$pic_name ];
+          then
+            echo "cannot create $year/$month/$pic, because there
+            exists a directory with the same name." >&2
+          # assume we can move $pic
+          else
+            mv "$pic" ./$year/$month
+          fi
+        fi
+      fi
+    fi
+  done
+fi

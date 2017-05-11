@@ -1,0 +1,62 @@
+#!/bin/sh
+
+echo '<!DOCTPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">'
+echo '<html>'
+echo '<head>'
+echo '<title>Pictures</title>'
+echo '</head>'
+echo '<body>'
+echo '<h1>Pictures</h1>'
+echo '<table>'
+
+# check if the number of column is a positive integer
+if echo $1 | egrep -q '^[1-9][0-9]*$';
+then
+  num_column=$1
+  shift 1
+  # counte number of pictures and pictures in a row
+  num_pic_total=0
+  num_pic_row=0
+  # loop through all picture files
+  for pic in $*
+  do
+    # check if this file is valid JPEG file
+    if file -b "$pic" | grep -q 'JPEG image data';
+    then
+      num_pic_total=`expr $num_pic_total + 1`
+      # if this is the first picture in a row
+      if [ $num_pic_row -eq 0 ];
+      then
+        echo '<tr>'
+      fi
+      # insert this picture
+      echo -n '<td><img src="'
+      echo -n "$pic"
+      echo '" height=100></td>'
+      num_pic_row=`expr $num_pic_row + 1`
+      # if this is the last picture in a row
+      if [ $num_pic_row -eq $num_column ];
+      then
+        echo '</tr>'
+        # reset the counter of number of pictures in a row
+        num_pic_row=0
+      fi
+    # if this file is not a valid JEPG file
+    else
+      echo "$pic is not a valid JEPG file." >&2
+    fi
+  done
+
+  # close table row if there is an unfilled row
+  if [ $(expr $num_pic_total % $num_column) -ne 0 ];
+  then
+    echo '</tr>'
+  fi
+else
+  # standard error
+  echo 'invalid argument for number of columns: It must be a positive integer' >&2
+fi
+
+echo '</table>'
+echo '</body>'
+echo '</html>'

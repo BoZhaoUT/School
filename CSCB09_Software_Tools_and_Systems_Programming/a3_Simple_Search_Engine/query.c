@@ -1,0 +1,171 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <dirent.h>
+#include "freq_list.h"
+#include "worker.h"
+
+
+int main(int argc, char **argv) {
+	char path[PATHLENGTH];
+	char *startdir;
+    // input parameters check
+    if (argc == 1) { // no directory given
+    	startdir = ".";
+    } else if (argc == 2) { // given a directory path
+    	startdir = argv[1];
+    } else { // this program cannot have more than 2 command line arguments
+    	fprintf(stderr, "Usage: query [DIRECTORY_NAME]\n");
+	    exit(1);
+    }
+	// Open the directory provided by the user (or current working directory)
+	DIR *dirp;
+	if ((dirp = opendir(startdir)) == NULL) {
+		perror("opendir");
+		exit(1);
+	}
+	/* For each entry in the directory, eliminate . and .., and check
+	* to make sure that the entry is a directory, then call run_worker
+	* to process the index file contained in the directory.
+ 	* Note that this implementation of the query engine iterates
+	* sequentially through the directories, and will expect to read
+	* a word from standard input for each index it checks.
+	*/
+	struct dirent *dp; // directory pointer
+	int pipe_master_to_worker[2]; // a pipe sends data from master to worker
+	int pipe_worker_to_master[2]; // a pipe sends data from worker to master
+	int *master_to_workers = malloc( sizeof(int *)); // an array of pipes from master to workers
+	if (master_to_workers == NULL) {
+		perror("malloc failed\n");
+		exit(1);
+	}
+	int *workers_to_master = malloc( sizeof(int *)); // an array of pipes from workes to master
+	if (workers_to_master == NULL) {
+		perror("malloc failed\n");
+		exit(1);
+	}
+	int num_worker = 0; // number of worker processes
+	pid_t pid;
+	pid_t master_pid = getpid();
+	// read all files in this directory and setting up all worker processes and pipes
+	while ((dp = readdir(dirp)) != NULL) {
+        // ignore all hidden and svn files
+		if (strcmp(dp->d_name, ".") == 0 ||
+		    strcmp(dp->d_name, "..") == 0 ||
+		    strcmp(dp->d_name, ".svn") == 0) {
+			continue;
+		}
+		// construct a path to a sub-directory
+		strncpy(path, startdir, PATHLENGTH);
+		strncat(path, "/", PATHLENGTH - strlen(path) - 1);
+		strncat(path, dp->d_name, PATHLENGTH - strlen(path) - 1);
+		// create a stat struct which contains all information about a file
+		struct stat sbuf;
+		if (stat(path, &sbuf) == -1) {
+			//This should only fail if we got the path wrong
+			// or we don't have permissions on this entry.
+			perror("stat");
+			exit(1);
+		}
+		// check if path is a valid path to a directory
+		if (S_ISDIR(sbuf.st_mode)) {
+			// setting up pipe master_to_workers
+			if (pipe(pipe_master_to_worker) == -1) {
+				perror("pipe failed");
+				exit(1);
+			}
+			// setting up pipe_worker_to_master
+			if (pipe(pipe_worker_to_master) == -1) {
+				perror("pipe failed");
+				exit(1);
+			}
+			// setting up fork if we are in master process
+			if (getpid() == master_pid) {
+				pid = fork();
+				// error checking
+				if (pid < 0) {
+					perror("fork failed");
+					exit(1);
+				// in worker process, i.e. child process
+				} else if (pid == 0) {
+					// close unwanted reading/writing end of pipes
+					close(pipe_master_to_worker[1]);
+					close(pipe_worker_to_master[0]);
+					run_worker(path, pipe_master_to_worker[0], pipe_worker_to_master[1]);
+					exit(0);
+					//break;
+				// in master process, i.e. parent process
+				} else {
+					// close unwanted reading/writing end of pipes
+					close(pipe_master_to_worker[0]);
+					close(pipe_worker_to_master[1]);
+					// dynamically adjust length of arrays of pipes
+					if (num_worker > 0) {
+						master_to_workers = realloc(master_to_workers, sizeof(int *) * (num_worker + 1));
+						if (master_to_workers == NULL) {
+							perror("realloc failed");
+							exit(1);
+						}
+						workers_to_master = realloc(workers_to_master, sizeof(int *) * (num_worker + 1));
+						if (workers_to_master == NULL) {
+							perror("realloc failed");
+							exit(1);
+						}
+					}
+					// construct arrays of pipes which will be used by master process
+					master_to_workers[num_worker] = pipe_master_to_worker[1];
+					workers_to_master[num_worker] = pipe_worker_to_master[0];
+					num_worker++;
+				}
+			}
+		}
+	}
+	// in master process, i.e. parent process
+	int num_bytes; // num_of_bytes of user input
+	char current_word[MAXWORD]; // the user input
+	int current_worker;
+	FreqRecord *temp_freq_record = malloc( sizeof(FreqRecord));
+	FreqRecord *master_freq_records_array;
+	int write_searching_word; // check whether write word succeed
+	int read_freq_record; // check whether read a FreqRecord succeed
+    memset(current_word, '\0', MAXWORD);
+    // read user's input, it should be a word they want to search
+	while ((num_bytes = read(STDIN_FILENO, current_word, MAXWORD)) > 0) {
+		current_word[num_bytes - 1] = '\0';	
+		// loop through the arrays of pipes and result generated by each worker process
+		for (current_worker = 0; current_worker < num_worker; current_worker++) {
+			write_searching_word = write(master_to_workers[current_worker], current_word, MAXWORD);
+			if (write_searching_word < 0) {
+				perror("write failed");
+				exit(1);
+			}
+		}
+		memset(current_word, '\0', MAXWORD);
+		// initialize an empty result array of FreqRecord
+		master_freq_records_array = init_master_records_array();
+		for (current_worker = 0; current_worker < num_worker; current_worker++) {
+			while (1) {
+				// read FreqRecord from worker processes
+				read_freq_record = read(workers_to_master[current_worker], temp_freq_record, sizeof(FreqRecord));
+				if (read_freq_record < 0) {
+					perror("read failed");
+					exit(1);
+				}
+				// reach eof
+				if (temp_freq_record->freq == 0) {
+					break;
+				}
+				manage_freq_records(temp_freq_record, master_freq_records_array);
+			}
+		}
+		print_freq_records(master_freq_records_array);
+	}
+	if (num_bytes < 0) {
+		perror("read in query failed");
+		exit(1);
+	}
+	return 0;
+}
