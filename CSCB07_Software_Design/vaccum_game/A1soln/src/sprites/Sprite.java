@@ -1,68 +1,64 @@
 package sprites;
 
+/**
+ * An abstract class represents sprite objects in general.
+ * @author Bo Zhao
+ */
 public abstract class Sprite {
 	
+	// the string representation of this sprite
 	protected char symbol;
+	// the vertical coordinate of this dirt
 	protected int row;
+	// the horizontal coordinate of this dirt
 	protected int column;
 	
 	/**
-	 * Create a Sprite object with given specification
-	 * @param symbol of Sprite object
-	 * @param row of Sprite object in a map
-	 * @param column of Sprite object in a map
+	 * Create a new dust ball object with symbol and
+	 * its coordinate (row, column).
+	 * 
+	 * @param symbol the symbol of a dirt object
+	 * @param row the vertical coordinate of this dirt
+	 * @param column the horizontal coordinate of this dirt
+	 * @param value score rewarded to a player when he collect this dirt
 	 */
 	public Sprite(char symbol, int row, int column) {
-
 		this.symbol = symbol;
 		this.row = row;
 		this.column = column;
 	}
 	
-
 	/**
-	 * @return the symbol of this Sprite
+	 * Return a string representation of this sprite object.
+	 * @return symbol a string representation of this sprite object
 	 */
 	public char getSymbol() {
 		return symbol;
 	}
 	
-
 	/**
-	 * @return the row of this Sprite
+	 * Reteurn the vertical coordiante of this sprite object.
+	 * @return the vertical coordinate of this sprite
 	 */
 	public int getRow() {
 		return row;
 	}
 	
-
 	/**
-	 * @return the column of this Sprite
+	 * Reteurn the horizontal coordiante of this sprite object.
+	 * @return the horizontal coordinate of this sprite
 	 */
 	public int getColumn() {
 		return column;
 	}
-
-
+	
 	/**
-	 * return string representation of this Sprite
+	 * Return a string representation of this sprite object.
+	 * @return a string representation of this sprite object
 	 */
 	@Override
 	public String toString() {
-		return String.valueOf(symbol);
+		return Character.toString(symbol);
 	}
-	
-	/**
-	 * @return true if other sprite is at the same location and has the symbol
-	 */
-	public boolean equals(Sprite other) {
-		boolean result;
-		if (row == other.getRow() && column == other.getColumn() &&
-				symbol == other.getSymbol()) {
-			result = true;
-		} else {
-			result = false;
-		}
-		return result;
-	}
+
 }

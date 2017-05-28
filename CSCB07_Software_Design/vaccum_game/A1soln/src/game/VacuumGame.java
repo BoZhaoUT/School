@@ -28,23 +28,30 @@ public class VacuumGame {
 
   // a random number generator to move the DustBalls
   private Random random;
-
-  public Grid<Sprite> grid;  // the grid
-
-  private Vacuum vacuum1;  // the first player
-
-  private Vacuum vacuum2;  /// the second player
-
+  
+  // the grid
+  public Grid<Sprite> grid;
+  
+  // the first player
+  private Vacuum vacuum1;
+  
+  // the second player
+  private Vacuum vacuum2;
+  
   // the dirt (both static dirt and mobile dust balls)
   private List<Dirt> dirts;
-
-  private List<Dumpster> dumpsters;   // the dumpsters
   
-  private int newRow; // potential new row of a vacuum
+  //the dumpsters
+  private List<Dumpster> dumpsters;   
   
-  private int newColumn; // potential new column of a vacuum
+  //potential new row of a vacuum
+  private int newRow;
   
-  Sprite toBeMoved = null; // determine which vacuum is to be moved
+  //potential new column of a vacuum
+  private int newColumn; 
+  
+  //determine which vacuum is to be moved
+  Sprite toBeMoved = null; 
 
   /**
    * Creates a new VacuumGame that corresponds to the given input text file.
@@ -55,40 +62,71 @@ public class VacuumGame {
    */
   public VacuumGame(String layoutFileName) throws IOException {
     dirts = new ArrayList<Dirt>();
-    dumpsters = new ArrayList<Dumpster>();
+    dumpsters = new ArrayList<Dumpster>(); // for future implementation
     random = new Random();
 
     // open the file, read the contents, and determine 
-    // dimensions of the grid
+    // dimensions of the grid [numRows, numColumns]
     int[] dimensions = getDimensions(layoutFileName);
-    grid = new ArrayGrid<Sprite>(dimensions[0], dimensions[1]);
+    int numRows = dimensions[0];
+    int numColumns = dimensions[1];
+    grid = new ArrayGrid<Sprite>(numRows, numColumns);
     
-
     // open the file again, read the contents, and store them in grid
     Scanner sc = new Scanner(new File(layoutFileName));
     
-    String nextLine = sc.nextLine();
-    ArrayList<String> content = new ArrayList<String>();
-    content.add(nextLine);
-    while (sc.hasNextLine()) {
+    // initialize the array grid
+    String nextLine;
+    char nextChar;
+    Sprite currentSprite;
+    // loop through the given file and create corressponding sprites
+    for (int i = 0; i < numRows; i++) {
     	nextLine = sc.nextLine();
-    	content.add(nextLine);
+    	for (int j = 0; j < numColumns; j++) {
+    		nextChar = nextLine.charAt(j);
+    		// wall
+    		if (nextChar == Constants.WALL) {
+    			currentSprite = new Wall(Constant.WALL, i, j);
+    		// dumpster
+    		} else if (nextChar == Constants.DUMPSTER) {
+    			currentSprite = new Dumpster(Constant.DUMPSTER, i, j);
+    		// clean hallway
+    		} else if (nextChar == Constants.CLEAN) {
+    			currentSprite = new CleanHallway(Constant.CLEAN, i, j);
+    		// dirt
+    		} else if (nextChar == Constants.DIRT) {
+    			currentSprite = new Dirt(Constant.DIRT, i, j, Constant.DIRT_SCORE);
+        	// player 1
+        	} else if (nextChar == Constants.P1) {
+        		// create player 1
+        		currentSprite = new Vacuum(Constant.P1, i, j, Constant.CAPACITY);
+        		vacuum1 = currentSprite;
+        		// create a piece of clean hall under player 1
+        		Sprite under = new CleanHallway(Constants.CLEAN, i, j);
+        		vacuum1.setUnder(under);
+        	// player 2
+        	} else if (nextChar == Constants.P2) {
+        		// create player 2
+        		vacuum2 = new Vacuum(Constant.P2, i, j, Constant.CAPACITY);
+        		vacuum2 = currentSprite;
+        		// create a piece of clean hall under player 2
+        		Sprite under = new CleanHallway(Constants.CLEAN, i, j);
+        		vacuum2.setUnder(under);
+    		// dumpster
+        	} else if (nextChar == Constants.DUMPSTER) {
+        		currentSprite = new Dumpster(Constant.DUMPSTER, i, j);
+    		// dustball
+    		} else if (nextChar == Constants.DUSTBALL) {
+    			currentSprite = new DustBall(Constant.DUSTBALL, i, j, Constant.DUST_BALL_SCORE);
+    		// unrecognized char
+    		} else {
+    			System.out.println("unrecognized symbol in grid file");
+    		}
+    		// add this spirte into grid
+    		grid.setCell(i, j, currentSprite);
+    	}
     }
     sc.close();
-    
-    // loop through each character in text file.
-	int numRow = 0;
-    for (String line : content) {
-    	int numColumn = 0;
-    	for (char symbol : line.toCharArray()) {
-    		// create a new sprite object
-    		Sprite sprite = createNewSprite(symbol, numRow, numColumn);
-    		// add new sprite object into a particular cell
-    		grid.setCell(numRow, numColumn, sprite);
-    		numColumn++;
-    	}
-    	numRow++;
-    }
   }
 
   /**
@@ -165,92 +203,21 @@ public class VacuumGame {
   }
   
   /**
-   * Move a vacuum based on the given char.
-   * @param nextMove is one of "wsadijkl"
-   * @return true if the corresponding vacuum is moved, false otherwise
+   * TODO
+   * @param nextMove direction a vaccum moves to
+   * @return true if the a vacuum is moved, false otherwise
    */
   public boolean move(char nextMove) {
-	  // by default, a vacuum is not moved
-	  boolean result = false;
-	  // get rows and columns of two vacuums
-	  int vacuum1NumRow = vacuum1.getRow(); // delete
-	  int vacuum1NumColumn = vacuum1.getColumn(); // delete
-	  int vacuum2NumRow = vacuum2.getRow(); // delete
-	  int vacuum2NumColumn = vacuum2.getColumn(); // delete
-	  int newNumRow; // potential row
-	  int newNumColumn; // potential column
-	  boolean moveable; // check if it's moveable
-	  Sprite newUnder; // potential sprite under
-	  Sprite currentUnder; // current sprite under vacuum // TODO
-	  Sprite newCell; // potential cell
-
-	  // check if a valid input char is given
-	  if (isLegalInput(nextMove)) {
-		  // get sprite at new cell
-		  newCell = grid.getCell(newRow, newColumn);
-		  if (canMoveTo(newCell)) {
-			  if (toBeMoved.equals(vacuum1)) {
-				  vacuum1.moveTo(newRow, newColumn);
-				  newUnder = grid.getCell(newRow, newColumn);
-				  vacuum1.setUnder(newUnder);
-				  
-			  } else { // assume vacuum2 is to be moved
-				  vacuum2.moveTo(newRow, newColumn);
-			  }
-		  }
-	  }
-	  return result;
+	  // TODO
   }
   
-  /**
-   * Create a new sprite object according to symbol, row and column
-   * read from a scanner.
-   * @param symbol of a sprite object
-   * @param row of a sprite object
-   * @param column of a sprite object
-   * @return result which is a Sprite object
-   */
-  private Sprite createNewSprite(char symbol, int row, int column) {
-	  Sprite result;
-	  // create a new sprite
-	  if (symbol == Constants.WALL) {
-		  result = new Wall(symbol, row, column);
-	  } else if (symbol == Constants.DUMPSTER) {
-		  result = new Dumpster(symbol, row, column);
-		  dumpsters.add((Dumpster) result);
-	  } else if (symbol == Constants.CLEAN){
-		  result = new CleanHallway(symbol, row, column);
-	  } else if (symbol == Constants.DIRT) {
-		  result = new Dirt(symbol, row, column);
-		  dirts.add((Dirt) result);
-	  } else if (symbol == Constants.DUST_BALL) {
-		  result = new DustBall(symbol, row, column);
-		  dirts.add((Dirt) result);
-	  } else if (symbol == Constants.P1) {
-		  // if symbol is P1 or P2, then create a clean hallway
-		  // and create according vacuum
-		  result = new CleanHallway(symbol, row, column);
-		  vacuum1 = new Vacuum(symbol, row, column, Constants.CAPACITY);
-	  } else { // assume the symbol is player2 here
-		  result = new CleanHallway(symbol, row, column);
-		  vacuum2 = new Vacuum(symbol, row, column, Constants.CAPACITY);
-	  }
-	  return result;
-  }
 
   /**
    * Return true if game is over (all dirts are cleaned), false otherwise.
-   * @return result which indicate whether a game is over
+   * @return true if game is over (all dirts are cleaned), false otherwise.
    */
   public boolean gameOver() {
-	  boolean result;
-	  // check if all dirts are cleaned
-	  if (dirts.size() == 0) {
-		  result = true;
-	  } else {
-		  result = false;
-	  }
-	  return result;
+	  return (dirts.size() == 0);
   }
   
   /**
@@ -332,15 +299,5 @@ public class VacuumGame {
    * Randomly change positions of dust balls.
    */
   private void dustBallsMove() {
-	  for (Dirt dirt : dirts) {
-		  if (dirt.getSymbol() == Constants.DUST_BALL) {
-			  Dirt currentDirt = dirt;
-			  random = new Random();
-			  if (random.nextBoolean()) {
-				  
-			  }
-			  
-		  }
-	  }
-  }
+	  // TODO
 }

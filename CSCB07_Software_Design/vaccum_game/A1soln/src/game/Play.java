@@ -19,7 +19,7 @@ public class Play {
 
     Ui gameUi;
 
-    if (Constants.UI_TYPE.equals("TextUi")) {
+    if (Constants.UI_TYPE.equals("text")) {
       gameUi = new TextUi(game);
     } else {
       gameUi = new Gui(game);

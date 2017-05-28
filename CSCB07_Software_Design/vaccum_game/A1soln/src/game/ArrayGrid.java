@@ -1,47 +1,55 @@
-/**
- * 
- */
 package game;
 
-import sprites.Sprite;
-import sprites.Vacuum;
-
 /**
- * @author Administrator
+ * A 2D grid which serves as the board of this game.
+ * @author Bo Zhao
  * @param <T>
- *
  */
 public class ArrayGrid<T> implements Grid<T> {
 
+	// number of rows in this array grid
 	private int numRows;
+	// number of columns in this array grid
 	private int numColumns;
-	private T cell;
-	private Vacuum vacuum1;
-	private Vacuum vacuum2;
-	T[][] grid;
+	// the actual grid
+	private T[][] grid;
 	
+	/**
+	 * Create a new array grid object with number of rows and columns.
+	 * 
+	 * @param numRows the number of rows in this grid
+	 * @param numColumns the number of columns in this grid
+	 */
 	public ArrayGrid(int numRows, int numColumns) {
-		
 		this.numRows = numRows;
 		this.numColumns = numColumns;
-		
-		T[][] grid = (T[][]) new Sprite[numRows][numColumns];
-		this.grid = grid;
-	}
-	
-	@Override
-	public void setCell(int row, int column, T item) {
-		grid[row][column] = item;
-		
-	}
-	
-	@Override
-	public T getCell(int row, int column) {
-		return (T) grid[row][column];
+		this.grid = (T[][]) new Object[numRows][numColumns];
 	}
 	
 	/**
-	 * @return numRows which is number of rows in this array grid
+	 * Change the sprite in this grid at (row, column)
+	 * @param row the vertical coordinate of this dirt
+	 * @param column the horizontal coordinate of this dirt
+	 * @param item the new sprite object
+	 */
+	@Override
+	public void setCell(int row, int column, T item) {
+		this.grid[row][column] = item;
+	}
+	
+	/**
+	 * Return the sprite object in this grid at (row, column).
+	 * @param row the vertical coordinate of this dirt
+	 * @param column the horizontal coordinate of this dirt
+	 */
+	@Override
+	public Sprite getCell(int row, int column) {
+		return grid[row][column];
+	}
+	
+	/**
+	 * Return the number of rows in this grid.
+	 * @return the number of rows in this grid
 	 */
 	@Override
 	public int getNumRows() {
@@ -49,7 +57,8 @@ public class ArrayGrid<T> implements Grid<T> {
 	}
 	
 	/**
-	 * @return numColumns which is number of columns in this array grid
+	 * Return the number of columns in this grid.
+	 * @return the number of columns in this grid
 	 */
 	@Override
 	public int getNumColumns() {
@@ -57,51 +66,40 @@ public class ArrayGrid<T> implements Grid<T> {
 	}
 	
 	/**
-	 * @return true if two ArrayGrid have the exact same dimensions and exact
-	 * content in each cell. Otherwise false.
+	 * Return true if two array grid are the same. False otherise.
+	 * 
 	 */
 	@Override
 	public boolean equals(Object other) {
-		boolean result = false;
-		
-		// demension of other ArrayGrid
-		ArrayGrid<T> otherGrid = (ArrayGrid<T>) other;
-		int otherNumRows = otherGrid.getNumRows();
-		int otherNumColumns = otherGrid.getNumColumns();
-		
-		if (!(numRows == otherNumRows && numColumns == otherNumColumns)) {
-
-			return result;
-		} else {
-			for (int row = 0; row < numRows; row++){
-				for (int column = 0; column < numColumns; column++){
-					if (! this.getCell(row, column).equals(otherGrid.getCell(row, column))) {
-						System.out.println("runned");
-						result = false;
-					}
+		// coordinate of a cell
+		int i, j = 0;
+		// assume there is no difference in two array grids
+		boolean difference = false;
+		T thisCell, otherCell;
+		while (i < numRows && !difference) {
+			while (j < numColumns && !difference) {
+				thisCell = getCell(i, j);
+				otherCell = other.getCell(i, j);
+				if (thisCell.toString() != otherCell.toString()) {
+					difference = true;
 				}
 			}
-			if (result != false) {
-				System.out.println("runned");
-				result = true;
-			}
 		}
-		return result;
+		return difference;
 	}
 	
 	/**
-	 * @return result which is a string representation of this array grid
+	 * Return a string representation of this grid.
 	 */
 	@Override
 	public String toString() {
 		String result = "";
-		for (int row = 0; row < numRows; row++) {
-			for (int column = 0; column < numColumns; column++) {
-				result += grid[row][column].toString();
+		for (int i = 0; i < numRows; i++) {
+			for (int j = 0; j < numColumns; j++) {
+				result += getCell(i, j);
 			}
-			result += "\n"; // may change this design
-			// in order to avoid an extra line below last line
 		}
 		return result;
 	}
+
 }

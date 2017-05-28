@@ -4,8 +4,8 @@
 package game;
 
 /**
- * @author Administrator
- *
+ * A class defines a 2D grid.
+ * @author Bo Zhao
  */
 public interface Grid<T> {
 	
